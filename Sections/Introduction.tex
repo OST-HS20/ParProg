@@ -1,0 +1,30 @@
+\section{Einführung}
+\subsection{Probleme}
+Warum ist es schwierig Parallel Programme zu schreiben.
+\begin{enumerate}[nosep]
+	\item Problem zu finden welches parallelisiert werden kann
+	\item Load balancing
+	\item Koordinieren und Synchronisieren
+	\item Debugging
+\end{enumerate}
+
+\subsection{Nebenläufigkeit}
+\textbf{Concurrent} gibt die Illusion, dass Tasks zur gleichen Zeit ausgeführt werden, werden aber in echt Nacheinander ausgeführt. Hingegen \textbf{Parallel} sind echt parallel ausgeführt.
+
+Grundsätzlich müssen Ressourcen, welche gemeinsam genutzt werden, synchronisiert sein. Ausser es ist \textit{read-only} oder die Struktur garantiert, dass das Objekt nur einem Thread gehört zB durch Concurrent-Wrapper.
+
+\subsection{Performance Messungen}\label{performance}
+\subsubsection{Latency vs Throughput}
+\textbf{Latency} beschreibt, wie lange eine einzelner Task geht. Im Gegensatz ist \textbf{Throughput} wie viele Tasks pro Sekunde abgearbeitet wurden.
+
+\subsubsection{Arithmetic intensity}
+Ist eine Ratio zwischen Bandbreite vom Computer zu Memory. (Einheit FLOP/Byte)
+
+\subsubsection{Race Condition}
+Mehrere Threads greifen auf gemeinsame Ressourcen ohne genügend Synchronisation zu. Das führt oft zu falschen Resultaten oder Verhalten (Lost Update). Im Gegensatz zu \textbf{Data Race}, ist Race Condition, ein \textit{high-level} Problem welches oft nur durch die entsprechenden Anforderung identifiziert werden können. Data Race sind spezifische unsynchronisierter Zugriff auf gleichen Speicher Elementen. 
+
+\subsubsection{Deadlocks}
+Zwei Threads schliessen sich Gegenseitig aus, brauchen aber keine CPU. Bei \textbf{Livelocks} sind ausgeschlossen Threads, welche aber dennoch CPU benötigen. Diese können systematisch durch Auflösen von Zyklen gelöst werden oder durch gröbere Auflösung von Monitoring-Konzepten.
+
+\subsubsection{Starvation}
+Ein Thread kriegt nie die Chance, auf eine Ressource zuzugreifen. 

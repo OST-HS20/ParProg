@@ -1,0 +1,115 @@
+\section{Monitor Synchronisation}
+In Java können \textit{synchronized}-Blöcke für Critical-Section verwendet werden. Dabei kann innerhalb einer Critical-Section nur ein Thread den LOCK darauf haben. c\# besitzt dafür \textit{lock}-Block.
+\begin{lstlisting}
+	// Object
+	synchronized void f() { ... } <=> void f() { synchronized(this) { ... } }
+	// Class
+	static synchronized void f() { ... } <=> static void f() { synchronized(Test.class) { ... } }
+\end{lstlisting}
+Durch \textit{wait} und \textit{notifyAll} können in Java auf Bedingungen gewartet werden. Notify sollte dabei nur verwendet werden, wenn One-In-One-Out erfüllt ist. Das bedeutet, alle Wartende den selbe Bedinung erfüllen müssen und egal ist, welcher Benachrichtigt wird.
+
+\textit{Thread.sleep()} und \textit{Thread.yield()} geben Monitor-Lock nicht frei!
+
+c\# hat dafür die statische Klasse \textit{Monitor} mit \textit{Wait} und \textit{PulseAll}.
+\begin{lstlisting}
+private final Queue<T> queue = new LinkedList<T>();
+
+public synchronized void put(T item) throws InterruptedException {
+	while (queue.size() == capacity) { wait(); } // WICHTIG: condition immer nochmals pruefen nach aufwecken
+	queue.add(item);
+	notifyAll(); // alle aufwecken, da ansonsten evt wait condition wieder anhaehlt und kein Thread mehr startet
+}
+
+public synchronized T get() throws InterruptedException {
+	while (queue.size() == 0) { wait(); }
+	T item = queue.remove();
+	notifyAll();
+	return item;
+}
+\end{lstlisting}
+\textbf{WICHTIG:} Condition immer in eine While Schlaufe prüfen!
+
+
+\section{Semaphore}
+Semaphore ist ein low-level Synchronisation Konzept welches für performante Ressourcen verwaltung verwendet werden kann. Es erlaubt eine spezifische benachrichtigung, anstatt ineffizientes \textit{notifyAll}. Dabei wird die blockierende \textit{acquire()} Methode, um die Ressource zu reservieren (bzw. Counter runterzählen) und \textit{release()} für das Freigeben (Counter erhöhen) verwendet.
+
+\begin{lstlisting}
+public class Monitor {
+	private final Semaphore monitorLock = new Semaphore(1);
+	private final Semaphore innerWaiting = new Semaphore(0);
+	private final Semaphore innerPulsed = new Semaphore(0);
+	private int waitingThreads = 0;
+	public void lock() throws InterruptedException {
+		monitorLock.acquire();
+	}
+	public void unlock() {
+		monitorLock.release();
+	}
+	public void await() throws InterruptedException {
+		waitingThreads++;
+		monitorLock.release();
+		innerWaiting.acquire();
+		innerPulsed.release();
+		monitorLock.acquire();
+	}
+	public void signalAll() throws InterruptedException {
+		innerWaiting.release(waitingThreads);
+		innerPulsed.acquire(waitingThreads);
+		// make sure that all waiting threads have been woken up
+		waitingThreads = 0;
+	}
+}
+\end{lstlisting}
+Für faire (dH FiFo für Wartende) mit \textit{new Semaphore(0, true)} arbeiten.
+
+
+\section{Lock \& Condition}
+Unabhängig vom eingebauten Java Monitor.
+\begin{lstlisting}
+private Queue<T> queue = new LinkedList<>();
+private Lock monitor = new ReentrantLock();
+private Condition nonFull = monitor.newCondition();
+private Condition nonEmpty = monitor.newCondition();
+
+public void put(T item) throws InterruptedException {
+	monitor.lock();
+	try {
+		while (queue.size() == capacity) { nonFull.await(); }
+		queue.add(item);
+		nonEmpty.signal();
+	} finally {
+		monitor.unlock();
+	}
+}
+
+public T get() throws InterruptedException {
+	monitor.lock();
+	try {
+		while (queue.size() == 0) { nonEmpty.await(); }
+		T item = queue.remove();
+		nonFull.signal();
+		return item;
+	} finally {
+		monitor.unlock();
+	}
+}
+\end{lstlisting}
+
+\section{Advanced}
+Folgende Klassen sind für Speziallfälle implementiert:
+\begin{itemize}[nosep]
+	\item CountDownLatch
+	\item CycleBarrier
+	\item Exchange
+	\item ReentrantLock
+	\item ReentrantReadWriteLock	 
+\end{itemize}
+
+~\\
+\textbf{Java Monitor} hat nur eine Queue. Lock\&Cond für jede eine Queue
+
+
+\textbf{Semaphore} ist nicht blockierend wenns tickets hat. Ticket werden runter und hoch gezählt. Bei \textbf{CountDownLatch} kann nicht mehr hochgezählt werden, weil wir nicht wissen wieviele Threads überhaupt darauf warten müssen.
+
+
+\textbf{CyclicBarrier} wird automatische zurückgesetzt, wenn alle Threads durch sind.
